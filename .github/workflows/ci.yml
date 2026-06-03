@@ -1,0 +1,37 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Lint & Test Mobile Workspace
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-style: npm
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: 'mobile/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: mobile
+
+      - name: Run ESLint / Expo Lint
+        run: npm run lint
+        working-directory: mobile
+        continue-on-error: true
+
+      - name: Run Unit Tests
+        run: npm test -- --watchAll=false
+        working-directory: mobile
