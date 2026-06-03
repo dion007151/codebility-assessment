@@ -1,0 +1,115 @@
+@model IEnumerable<PimsApp.Models.Project>
+
+@{
+    ViewData["Title"] = "Bids & Awards Committee (BAC)";
+    var currentUser = ViewBag.CurrentUser as PimsApp.Models.User;
+}
+
+<div class="pims-card">
+    <div class="card-title-bar" style="border-bottom: none; margin-bottom: 0;">
+        <div>
+            <h3 style="font-size: 1.35rem;">Bidding &amp; Procurement Awards</h3>
+            <p style="color: var(--slate-600); font-size: 0.85rem; margin: 4px 0 0 0;">Manage supplier bidding stages and award contracts for budget-cleared proposals.</p>
+        </div>
+    </div>
+</div>
+
+@if (currentUser?.Role != "BAC")
+{
+    <div class="alert-pims alert-pims-danger">
+        <span class="alert-icon-danger">!</span>
+        <div>Access Denied: Only members of the <strong>Bids & Awards Committee (BAC)</strong> can access this panel. Switch your simulated role to "BAC" above to review bidding.</div>
+    </div>
+}
+else
+{
+    @if (!Model.Any())
+    {
+        <div class="pims-card" style="text-align: center; padding: 50px 0; color: var(--slate-600);">
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 15px; color: var(--slate-500);">No Pending Items</div>
+            <h4>No Projects Pending Bidding</h4>
+            <p style="margin-top: 5px;">There are no projects currently waiting for bidding or contract awards.</p>
+        </div>
+    }
+    else
+    {
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            @foreach (var project in Model)
+            {
+                var isBidding = project.Status == "ProcurementBidding";
+                
+                <div class="pims-card" style="border-left: 5px solid var(--primary-light);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--slate-100); padding-bottom: 15px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h4 style="margin: 0; font-size: 1.2rem;">@project.Title</h4>
+                                <span class="badge-pims @(isBidding ? "badge-bidding" : "badge-budget-approved")">
+                                    @(isBidding ? "Bidding In Progress" : "Awaiting Bidding Initiation")
+                                </span>
+                            </div>
+                            <span style="font-size: 0.8rem; color: var(--slate-600);">Proposed by @project.CreatedBy on @project.DateCreated.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="switcher-label">Validated Budget Limit</span>
+                            <div style="font-size: 1.35rem; font-weight: 800; color: var(--slate-900); margin-top: 4px;">
+                                @project.Amount.ToString("C2", new System.Globalization.CultureInfo("en-PH"))
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <span class="switcher-label">Scope details</span>
+                        <p style="font-size: 0.9rem; line-height: 1.5; color: var(--slate-700); margin: 6px 0 0 0; white-space: pre-line;">@project.Description</p>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        @if (!isBidding)
+                        {
+                            <!-- Option 1: Start Bidding -->
+                            <div style="background-color: var(--slate-100); padding: 16px; border-radius: var(--radius-sm); border: 1px dashed var(--slate-300); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                                <div>
+                                    <strong style="font-size: 0.9rem; color: var(--slate-800);">Initiate Public Bidding</strong>
+                                    <div style="font-size: 0.8rem; color: var(--slate-600); margin-top: 4px;">Publish this project proposal to begin accepting bids from contractors.</div>
+                                </div>
+                                <form asp-action="StartBidding" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="projectId" value="@project.ProjectId" />
+                                    <button type="submit" class="btn-pims btn-pims-primary">
+                                        Start Bidding Process
+                                    </button>
+                                </form>
+                            </div>
+                        }
+
+                        <!-- Option 2: Award Procurement Contract -->
+                        <div style="background-color: var(--slate-50); padding: 18px; border-radius: var(--radius-sm); border: 1px solid var(--slate-200);">
+                            <span class="switcher-label" style="display: block; margin-bottom: 12px; font-weight: 700;">Award Procurement Contract</span>
+                            
+                            <form asp-action="AwardProcurement" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="projectId" value="@project.ProjectId" />
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px; margin-bottom: 15px;">
+                                    <div class="form-group-pims" style="margin-bottom: 0;">
+                                        <label class="form-label-pims" style="font-size: 0.8rem;">Winning Supplier / Contractor</label>
+                                        <input name="supplier" type="text" class="form-input-pims" placeholder="e.g. BuildStrong Construction Corp." required />
+                                    </div>
+                                    <div class="form-group-pims" style="margin-bottom: 0;">
+                                        <label class="form-label-pims" style="font-size: 0.8rem;">BAC Resolution Remarks</label>
+                                        <input name="remarks" type="text" class="form-input-pims" placeholder="e.g. Awarded to the lowest responsive bidder after verification." required />
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end;">
+                                    <button type="submit" class="btn-pims btn-pims-success">
+                                        Award Procurement &amp; Contract
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}

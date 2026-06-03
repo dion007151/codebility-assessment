@@ -1,0 +1,13 @@
+# Database files
+pims.db
+pims.db-shm
+pims.db-wal
+
+# Build and IDE files
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates

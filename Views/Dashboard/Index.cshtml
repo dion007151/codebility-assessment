@@ -1,0 +1,175 @@
+@model IEnumerable<PimsApp.Models.Project>
+
+@{
+    ViewData["Title"] = "Dashboard Overview";
+    var currentUser = ViewBag.CurrentUser as PimsApp.Models.User;
+    var recentLogs = ViewBag.RecentLogs as IEnumerable<PimsApp.Models.WorkflowLog>;
+}
+
+<!-- Summary Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-label">Total Projects</span>
+        <span class="stat-value">@ViewBag.TotalProjects</span>
+        <div class="stat-meta">Database records</div>
+    </div>
+    <div class="stat-card stat-success">
+        <span class="stat-label">Disbursed Payments</span>
+        <span class="stat-value">@(((decimal)ViewBag.TotalPaymentsDisbursed).ToString("C2", new System.Globalization.CultureInfo("en-PH")))</span>
+        <div class="stat-meta">Completed transactions</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <span class="stat-label">Approved budget</span>
+        <span class="stat-value">@(((decimal)ViewBag.TotalApprovedBudget).ToString("C2", new System.Globalization.CultureInfo("en-PH")))</span>
+        <div class="stat-meta">Allocated allocations</div>
+    </div>
+    <div class="stat-card stat-danger">
+        <span class="stat-label">Total Proposal Cost</span>
+        <span class="stat-value">@(((decimal)ViewBag.TotalAmount).ToString("C2", new System.Globalization.CultureInfo("en-PH")))</span>
+        <div class="stat-meta">Combined request value</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Left Column: Actions and Projects -->
+    <div>
+        <!-- Role Actions Panel -->
+        <div class="pims-card">
+            <div class="card-title-bar">
+                <h3>Welcome, @currentUser?.Name (@currentUser?.Role)</h3>
+                <span class="badge-pims badge-completed">Live Simulator</span>
+            </div>
+            
+            <p>You are viewing the system as the <strong>@currentUser?.Role</strong>. Below are your quick actions:</p>
+            
+            <div style="display: flex; gap: 12px; margin-top: 15px;">
+                @if (currentUser?.Role == "OPPDC")
+                {
+                    <a href="@Url.Action("Create", "Project")" class="btn-pims btn-pims-primary">Encode New Project</a>
+                    <a href="@Url.Action("Index", "Project")" class="btn-pims btn-pims-secondary">Manage Project Proposals</a>
+                }
+                else if (currentUser?.Role == "Governor")
+                {
+                    <a href="@Url.Action("Index", "Approval")" class="btn-pims btn-pims-primary">Review Governor Approvals (@ViewBag.PendingGovernorCount)</a>
+                }
+                else if (currentUser?.Role == "Budget")
+                {
+                    <a href="@Url.Action("Index", "Budget")" class="btn-pims btn-pims-primary">Validate Budgets (@ViewBag.PendingBudgetCount)</a>
+                }
+                else if (currentUser?.Role == "BAC")
+                {
+                    <a href="@Url.Action("Index", "Procurement")" class="btn-pims btn-pims-primary">Manage BAC Bids (@ViewBag.PendingProcurementCount)</a>
+                }
+                else if (currentUser?.Role == "Accountant" || currentUser?.Role == "Treasurer")
+                {
+                    <a href="@Url.Action("Index", "Finance")" class="btn-pims btn-pims-primary">Enter Finance Portal</a>
+                }
+            </div>
+        </div>
+
+        <!-- Recent Projects Table -->
+        <div class="pims-card">
+            <div class="card-title-bar">
+                <h3>Active Projects (Last 10)</h3>
+                <a href="@Url.Action("Index", "Project")" style="font-size: 0.85rem; color: var(--primary-light); text-decoration: none; font-weight: 600;">View All</a>
+            </div>
+
+            <div class="table-pims-container">
+                <table class="table-pims">
+                    <thead>
+                        <tr>
+                            <th>Project Title</th>
+                            <th>Budget Request</th>
+                            <th>Current Status</th>
+                            <th>Date Created</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--slate-600); padding: 30px 0;">No projects encoded yet.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var project in Model)
+                            {
+                                var badgeClass = project.Status.ToLower() switch
+                                {
+                                    "draft" => "badge-draft",
+                                    "submitted" => "badge-submitted",
+                                    "approvedgovernor" => "badge-approved-gov",
+                                    "rejectedgovernor" => "badge-rejected-gov",
+                                    "budgetapproved" => "badge-budget-approved",
+                                    "budgetrevisionrequired" => "badge-revision",
+                                    "procurementbidding" => "badge-bidding",
+                                    "procurementawarded" => "badge-awarded",
+                                    "vouchergenerated" => "badge-voucher",
+                                    "paymentcompleted" => "badge-completed",
+                                    _ => "badge-draft"
+                                };
+
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600; color: var(--slate-900);">@project.Title</div>
+                                        <div style="font-size: 0.75rem; color: var(--slate-600);">Created by @project.CreatedBy</div>
+                                    </td>
+                                    <td class="font-bold">@project.Amount.ToString("C2", new System.Globalization.CultureInfo("en-PH"))</td>
+                                    <td>
+                                        <span class="badge-pims @badgeClass">@project.Status</span>
+                                    </td>
+                                    <td>@project.DateCreated.ToString("MMM dd, yyyy")</td>
+                                    <td style="text-align: right;">
+                                        <a href="@Url.Action("Details", "Project", new { id = project.ProjectId })" class="btn-pims btn-pims-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Track</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Audit Logs & Activity Feed -->
+    <div>
+        <div class="pims-card" style="height: 100%;">
+            <div class="card-title-bar">
+                <h3>Recent Workflow Logs</h3>
+            </div>
+            
+            <ul class="activity-feed">
+                @if (recentLogs == null || !recentLogs.Any())
+                {
+                    <li style="color: var(--slate-600); font-size: 0.85rem; padding: 20px 0; text-align: center;">No activity logs recorded.</li>
+                }
+                else
+                {
+                    foreach (var log in recentLogs)
+                    {
+                        var isCompleted = log.Status == "PaymentCompleted";
+                        var isActive = !isCompleted && log.Status != "Draft";
+                        
+                        <li class="activity-item @(isCompleted ? "completed" : isActive ? "active" : "")">
+                            <div class="activity-marker"></div>
+                            <div class="activity-details">
+                                <span class="activity-text">
+                                    <strong>@log.StepName</strong> for project ID #@log.ProjectId
+                                </span>
+                                <span style="font-size: 0.8rem; color: var(--slate-700); margin-top: 4px;">
+                                    Updated by <strong>@log.UpdatedBy</strong> (@log.ResponsibleRole)
+                                </span>
+                                <span style="font-size: 0.8rem; font-style: italic; color: var(--slate-600); margin-top: 2px;">
+                                    "@log.Remarks"
+                                </span>
+                                <span class="activity-time">@log.Timestamp.ToString("MMM dd, yyyy hh:mm tt")</span>
+                            </div>
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+</div>

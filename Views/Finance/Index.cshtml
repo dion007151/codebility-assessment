@@ -1,0 +1,144 @@
+@{
+    ViewData["Title"] = "Provincial Finance & Treasury Portal";
+    var currentUser = ViewBag.CurrentUser as PimsApp.Models.User;
+    var pendingVouchers = ViewBag.PendingVouchers as IEnumerable<PimsApp.Models.Project> ?? new List<PimsApp.Models.Project>();
+    var pendingPayments = ViewBag.PendingPayments as IEnumerable<PimsApp.Models.Voucher> ?? new List<PimsApp.Models.Voucher>();
+
+    var isAccountant = currentUser?.Role == "Accountant";
+    var isTreasurer = currentUser?.Role == "Treasurer";
+}
+
+<div class="pims-card">
+    <div class="card-title-bar" style="border-bottom: none; margin-bottom: 0;">
+        <div>
+            <h3 style="font-size: 1.35rem;">Department of Finance & Treasury</h3>
+            <p style="color: var(--slate-600); font-size: 0.85rem; margin: 4px 0 0 0;">Certify financial invoices and authorize treasury payments for awarded procurement contracts.</p>
+        </div>
+    </div>
+</div>
+
+@if (!isAccountant && !isTreasurer)
+{
+    <div class="alert-pims alert-pims-danger">
+        <span class="alert-icon-danger">!</span>
+        <div>Access Denied: Only the <strong>Accountant</strong> or the <strong>Treasurer</strong> can view the finance desk. Please switch your simulated role to "Accountant" or "Treasurer" above to proceed.</div>
+    </div>
+}
+
+<div class="dashboard-grid">
+    
+    <!-- LEFT PANEL: ACCOUNTANT WORKSPACE -->
+    <div>
+        <div class="pims-card" style="height: 100%; border-top: 4px solid var(--primary-light);">
+            <div class="card-title-bar">
+                <h3>Accountant Ledger (Voucher Generation)</h3>
+                <span class="badge-pims badge-voucher">Accountant Role</span>
+            </div>
+
+            @if (!isAccountant)
+            {
+                <div style="background-color: var(--slate-100); color: var(--slate-700); padding: 12px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 20px;">
+                    Switch to <strong>Accountant</strong> role to generate vouchers.
+                </div>
+            }
+
+            @if (!pendingVouchers.Any())
+            {
+                <div style="text-align: center; color: var(--slate-600); padding: 40px 0; font-size: 0.9rem;">
+                    No projects pending voucher certification.
+                </div>
+            }
+            else
+            {
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    @foreach (var project in pendingVouchers)
+                    {
+                        <div style="border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 16px; background-color: #fff;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                <div>
+                                    <strong style="font-size: 0.95rem; color: var(--slate-900);">@project.Title</strong>
+                                    <div style="font-size: 0.75rem; color: var(--slate-600);">Project ID #@project.ProjectId</div>
+                                </div>
+                                <div style="font-weight: 700; color: var(--primary);">
+                                    @project.Amount.ToString("C2", new System.Globalization.CultureInfo("en-PH"))
+                                </div>
+                            </div>
+                            
+                            @if (isAccountant)
+                            {
+                                <form asp-action="GenerateVoucher" method="post" style="margin-top: 12px; background-color: var(--slate-50); padding: 10px; border-radius: 6px; border: 1px solid var(--slate-200);">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="projectId" value="@project.ProjectId" />
+                                    <div class="form-group-pims" style="margin-bottom: 10px;">
+                                        <input name="remarks" type="text" class="form-input-pims" style="padding: 6px 10px; font-size: 0.8rem;" placeholder="Accountant Remarks (e.g. Voucher certified correct)" required />
+                                    </div>
+                                    <button type="submit" class="btn-pims btn-pims-primary" style="width: 100%; padding: 6px 12px; font-size: 0.8rem;">
+                                        Generate Voucher
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: TREASURY RELEASE WORKSPACE -->
+    <div>
+        <div class="pims-card" style="height: 100%; border-top: 4px solid var(--success);">
+            <div class="card-title-bar">
+                <h3>Treasury Releases (Disbursements)</h3>
+                <span class="badge-pims badge-completed">Treasurer Role</span>
+            </div>
+
+            @if (!isTreasurer)
+            {
+                <div style="background-color: var(--slate-100); color: var(--slate-700); padding: 12px; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 20px;">
+                    Switch to <strong>Treasurer</strong> role to authorize check payments.
+                </div>
+            }
+
+            @if (!pendingPayments.Any())
+            {
+                <div style="text-align: center; color: var(--slate-600); padding: 40px 0; font-size: 0.9rem;">
+                    No vouchers awaiting check disbursement.
+                </div>
+            }
+            else
+            {
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    @foreach (var voucher in pendingPayments)
+                    {
+                        <div style="border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 16px; background-color: #fff;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                <div>
+                                    <strong style="font-size: 0.95rem; color: var(--slate-900);">@voucher.Project?.Title</strong>
+                                    <div style="font-size: 0.75rem; color: var(--slate-600);">Voucher ID #V-@voucher.VoucherId | Project ID #@voucher.ProjectId</div>
+                                </div>
+                                <div style="font-weight: 700; color: var(--success);">
+                                    @voucher.Amount.ToString("C2", new System.Globalization.CultureInfo("en-PH"))
+                                </div>
+                            </div>
+                            
+                            @if (isTreasurer)
+                            {
+                                <form asp-action="ProcessPayment" method="post" style="margin-top: 12px; background-color: var(--slate-50); padding: 10px; border-radius: 6px; border: 1px solid var(--slate-200);">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="voucherId" value="@voucher.VoucherId" />
+                                    <div class="form-group-pims" style="margin-bottom: 10px;">
+                                        <input name="remarks" type="text" class="form-input-pims" style="padding: 6px 10px; font-size: 0.8rem;" placeholder="Check details (e.g. LBP Check #CK-881273 issued)" required />
+                                    </div>
+                                    <button type="submit" class="btn-pims btn-pims-success" style="width: 100%; padding: 6px 12px; font-size: 0.8rem;">
+                                        Complete &amp; Release Payment
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+</div>

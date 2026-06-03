@@ -1,0 +1,73 @@
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@inject PimsApp.Data.PimsDbContext Db
+
+@{
+    var session = HttpContextAccessor.HttpContext?.Session;
+    var currentRole = session?.GetString("CurrentUserRole") ?? "OPPDC";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PIMS</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pims-layout">
+        <!-- Sidebar -->
+        @await Html.PartialAsync("_Sidebar")
+
+        <!-- Main Workspace -->
+        <div class="pims-main">
+            <!-- Header Bar -->
+            <header class="pims-header">
+                <div class="header-title">
+                    <h1>@ViewData["Title"]</h1>
+                </div>
+                <div class="header-actions">
+                    <!-- Simulation Switcher Form -->
+                    <form action="@Url.Action("SwitchRole", "Dashboard")" method="post" class="role-switcher-container">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                        <span class="switcher-label">Simulate Role:</span>
+                        <select name="role" class="switcher-select" onchange="this.form.submit()">
+                            <option value="OPPDC" selected="@(currentRole == "OPPDC")">OPPDC (Planner)</option>
+                            <option value="Governor" selected="@(currentRole == "Governor")">Governor</option>
+                            <option value="Budget" selected="@(currentRole == "Budget")">Budget Office</option>
+                            <option value="BAC" selected="@(currentRole == "BAC")">BAC (Procurement)</option>
+                            <option value="Accountant" selected="@(currentRole == "Accountant")">Accountant</option>
+                            <option value="Treasurer" selected="@(currentRole == "Treasurer")">Treasurer</option>
+                        </select>
+                    </form>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="pims-content-container">
+                <!-- Session Alerts -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert-pims alert-pims-success">
+                        <span class="alert-icon-success">&#10003;</span>
+                        <div>@TempData["SuccessMessage"]</div>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert-pims alert-pims-danger">
+                        <span class="alert-icon-danger">!</span>
+                        <div>@TempData["ErrorMessage"]</div>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

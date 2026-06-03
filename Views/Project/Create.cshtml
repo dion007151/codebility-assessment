@@ -1,0 +1,60 @@
+@model PimsApp.Models.Project
+
+@{
+    ViewData["Title"] = "Encode Project Proposal";
+    var currentUser = ViewBag.CurrentUser as PimsApp.Models.User;
+}
+
+<div style="max-width: 700px; margin: 0 auto;">
+    <div class="pims-card">
+        <div class="card-title-bar">
+            <h3>Encode New Project Profile</h3>
+            <a href="@Url.Action("Index")" class="btn-pims btn-pims-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Back to Registry</a>
+        </div>
+
+        @if (currentUser?.Role != "OPPDC")
+        {
+            <div class="alert-pims alert-pims-danger">
+                <span class="alert-icon-danger">!</span>
+                <div>Access Denied: Only users with the <strong>OPPDC (Planner)</strong> role can encode project proposals. Use the role switcher above to change your role.</div>
+            </div>
+        }
+        else
+        {
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="form-group-pims">
+                    <label asp-for="Title" class="form-label-pims">Project Title</label>
+                    <input asp-for="Title" class="form-input-pims" placeholder="e.g. Construction of Barangay Health Center" required />
+                    <span asp-validation-for="Title" class="text-danger-pims" style="font-size: 0.8rem; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div class="form-group-pims">
+                    <label asp-for="Description" class="form-label-pims">Project Description</label>
+                    <textarea asp-for="Description" class="form-input-pims form-textarea-pims" placeholder="Describe the scope, objectives, and target beneficiaries of this infrastructure project..." required></textarea>
+                    <span asp-validation-for="Description" class="text-danger-pims" style="font-size: 0.8rem; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div class="form-group-pims">
+                    <label asp-for="Amount" class="form-label-pims">Initial Budget Request (PHP)</label>
+                    <input asp-for="Amount" type="number" step="0.01" class="form-input-pims" placeholder="e.g. 500000.00" required />
+                    <span asp-validation-for="Amount" class="text-danger-pims" style="font-size: 0.8rem; margin-top: 4px; display: block;"></span>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--slate-200); padding-top: 20px; margin-top: 30px;">
+                    <button type="submit" name="actionType" value="Draft" class="btn-pims btn-pims-secondary">
+                        Save as Draft
+                    </button>
+                    <button type="submit" name="actionType" value="Submit" class="btn-pims btn-pims-primary">
+                        Submit to Governor
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

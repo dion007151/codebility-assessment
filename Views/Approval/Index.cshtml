@@ -1,0 +1,82 @@
+@model IEnumerable<PimsApp.Models.Project>
+
+@{
+    ViewData["Title"] = "Executive Office Decisions";
+    var currentUser = ViewBag.CurrentUser as PimsApp.Models.User;
+}
+
+<div class="pims-card">
+    <div class="card-title-bar" style="border-bottom: none; margin-bottom: 0;">
+        <div>
+            <h3 style="font-size: 1.35rem;">Executive Endorsement Board</h3>
+            <p style="color: var(--slate-600); font-size: 0.85rem; margin: 4px 0 0 0;">Review pending public project requests and release approvals or rejection orders.</p>
+        </div>
+    </div>
+</div>
+
+@if (currentUser?.Role != "Governor")
+{
+    <div class="alert-pims alert-pims-danger">
+        <span class="alert-icon-danger">!</span>
+        <div>Access Denied: Only the <strong>Governor</strong> can approve or reject submitted proposals. Please switch your role to "Governor" in the selector above to manage approvals.</div>
+    </div>
+}
+else
+{
+    @if (!Model.Any())
+    {
+        <div class="pims-card" style="text-align: center; padding: 50px 0; color: var(--slate-600);">
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 15px; color: var(--slate-500);">No Pending Items</div>
+            <h4>All Caught Up!</h4>
+            <p style="margin-top: 5px;">There are no project proposals currently awaiting executive decision.</p>
+        </div>
+    }
+    else
+    {
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            @foreach (var project in Model)
+            {
+                <div class="pims-card" style="border-left: 5px solid var(--primary-light);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--slate-100); padding-bottom: 15px;">
+                        <div>
+                            <span class="switcher-label">Project Proposal</span>
+                            <h4 style="margin: 4px 0 0 0; font-size: 1.2rem;">@project.Title</h4>
+                            <span style="font-size: 0.8rem; color: var(--slate-600);">Proposed by @project.CreatedBy on @project.DateCreated.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="switcher-label">Requested Funds</span>
+                            <div style="font-size: 1.35rem; font-weight: 800; color: var(--primary); margin-top: 4px;">
+                                @project.Amount.ToString("C2", new System.Globalization.CultureInfo("en-PH"))
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <span class="switcher-label">Description & Scope</span>
+                        <p style="font-size: 0.9rem; line-height: 1.5; color: var(--slate-700); margin: 6px 0 0 0; white-space: pre-line;">@project.Description</p>
+                    </div>
+
+                    <!-- Governor Actions Form -->
+                    <form asp-action="ProcessApproval" method="post" style="background-color: var(--slate-50); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--slate-200);">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@project.ProjectId" />
+                        
+                        <div class="form-group-pims" style="margin-bottom: 15px;">
+                            <label class="form-label-pims" style="font-size: 0.8rem;">Governor's Executive Remarks / Notes</label>
+                            <input name="remarks" type="text" class="form-input-pims" placeholder="e.g. Approved. Prioritize this construction for the community health expansion." required />
+                        </div>
+
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button type="submit" name="actionType" value="Reject" class="btn-pims btn-pims-danger">
+                                Reject Project
+                            </button>
+                            <button type="submit" name="actionType" value="Approve" class="btn-pims btn-pims-success">
+                                Approve &amp; Endorse
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+}

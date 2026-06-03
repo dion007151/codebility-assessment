@@ -1,0 +1,129 @@
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@inject PimsApp.Data.PimsDbContext Db
+
+@{
+    var session = HttpContextAccessor.HttpContext?.Session;
+    var currentRole = session?.GetString("CurrentUserRole") ?? "OPPDC";
+    var currentUserName = session?.GetString("CurrentUserName") ?? "Maria Santos";
+
+    // Query counters directly so they display on every controller view
+    var pendingGov = Db.Projects.Count(p => p.Status == "Submitted");
+    var pendingBudget = Db.Projects.Count(p => p.Status == "ApprovedGovernor" || p.Status == "BudgetRevisionRequired");
+    var pendingProc = Db.Projects.Count(p => p.Status == "BudgetApproved" || p.Status == "ProcurementBidding");
+    var pendingVoucher = Db.Projects.Count(p => p.Status == "ProcurementAwarded");
+    var pendingPayment = Db.Projects.Count(p => p.Status == "VoucherGenerated");
+
+    string GetActiveCls(string controller, string action = "Index")
+    {
+        var routeController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var routeAction = ViewContext.RouteData.Values["action"]?.ToString();
+        
+        return string.Equals(routeController, controller, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(routeAction, action, StringComparison.OrdinalIgnoreCase)
+               ? "active" : "";
+    }
+}
+
+<aside class="pims-sidebar">
+    <div class="sidebar-brand">
+        <div class="sidebar-logo">PIMS</div>
+        <div class="brand-text">
+            <h2>PIMS Admin</h2>
+            <span>Provincial Gov</span>
+        </div>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li class="menu-section-header">Core</li>
+        <li>
+            <a class="sidebar-link @GetActiveCls("Dashboard")" asp-controller="Dashboard" asp-action="Index">
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a class="sidebar-link @GetActiveCls("Project", "Index")" asp-controller="Project" asp-action="Index">
+                <span>All Projects</span>
+            </a>
+        </li>
+
+        @if (currentRole == "OPPDC")
+        {
+            <li class="menu-section-header">Planning Office</li>
+            <li>
+                <a class="sidebar-link @GetActiveCls("Project", "Create")" asp-controller="Project" asp-action="Create">
+                    <span>Encode Project</span>
+                </a>
+            </li>
+        }
+
+        @if (currentRole == "Governor")
+        {
+            <li class="menu-section-header">Executive Office</li>
+            <li>
+                <a class="sidebar-link @GetActiveCls("Approval")" asp-controller="Approval" asp-action="Index">
+                    <span>Governor Approvals</span>
+                    @if (pendingGov > 0)
+                    {
+                        <span class="sidebar-badge text-danger-pims" style="background: var(--danger-light);">@pendingGov</span>
+                    }
+                </a>
+            </li>
+        }
+
+        @if (currentRole == "Budget")
+        {
+            <li class="menu-section-header">Budget Office</li>
+            <li>
+                <a class="sidebar-link @GetActiveCls("Budget")" asp-controller="Budget" asp-action="Index">
+                    <span>Budget Validation</span>
+                    @if (pendingBudget > 0)
+                    {
+                        <span class="sidebar-badge text-warning-pims" style="background: var(--warning-light);">@pendingBudget</span>
+                    }
+                </a>
+            </li>
+        }
+
+        @if (currentRole == "BAC")
+        {
+            <li class="menu-section-header">Bids & Awards Committee</li>
+            <li>
+                <a class="sidebar-link @GetActiveCls("Procurement")" asp-controller="Procurement" asp-action="Index">
+                    <span>BAC Bidding</span>
+                    @if (pendingProc > 0)
+                    {
+                        <span class="sidebar-badge text-primary-pims" style="background: var(--primary-accent);">@pendingProc</span>
+                    }
+                </a>
+            </li>
+        }
+
+        @if (currentRole == "Accountant" || currentRole == "Treasurer")
+        {
+            <li class="menu-section-header">Finance & Treasury</li>
+            <li>
+                <a class="sidebar-link @GetActiveCls("Finance")" asp-controller="Finance" asp-action="Index">
+                    <span>Finance Portal</span>
+                    @if (currentRole == "Accountant" && pendingVoucher > 0)
+                    {
+                        <span class="sidebar-badge" style="background: #e0f7fa; color: #006064;">@pendingVoucher</span>
+                    }
+                    @if (currentRole == "Treasurer" && pendingPayment > 0)
+                    {
+                        <span class="sidebar-badge" style="background: #ecfdf5; color: #065f46;">@pendingPayment</span>
+                    }
+                </a>
+            </li>
+        }
+    </ul>
+
+    <div class="sidebar-footer-profile">
+        <div class="profile-avatar">
+            @currentUserName.Substring(0, 1)
+        </div>
+        <div class="profile-info">
+            <span class="profile-name">@currentUserName</span>
+            <span class="profile-role">@currentRole</span>
+        </div>
+    </div>
+</aside>

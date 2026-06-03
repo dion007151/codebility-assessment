@@ -1,0 +1,86 @@
+@model IEnumerable<PimsApp.Models.Project>
+
+@{
+    ViewData["Title"] = "Project Proposals Registry";
+    var currentUser = ViewBag.CurrentUser as PimsApp.Models.User;
+}
+
+<div class="pims-card">
+    <div class="card-title-bar" style="border-bottom: none; margin-bottom: 0;">
+        <div>
+            <h3 style="font-size: 1.35rem;">Project Registry</h3>
+            <p style="color: var(--slate-600); font-size: 0.85rem; margin: 4px 0 0 0;">View status and history of all encoded public works proposals.</p>
+        </div>
+        @if (currentUser?.Role == "OPPDC")
+        {
+            <a href="@Url.Action("Create", "Project")" class="btn-pims btn-pims-primary">
+                Encode New Project
+            </a>
+        }
+    </div>
+</div>
+
+<div class="table-pims-container">
+    <table class="table-pims">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Project Details</th>
+                <th>Requested Budget</th>
+                <th>Encoded By</th>
+                <th>Status</th>
+                <th>Date Created</th>
+                <th style="text-align: right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--slate-600); padding: 40px 0;">No projects have been encoded yet.</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var project in Model)
+                {
+                    var badgeClass = project.Status.ToLower() switch
+                    {
+                        "draft" => "badge-draft",
+                        "submitted" => "badge-submitted",
+                        "approvedgovernor" => "badge-approved-gov",
+                        "rejectedgovernor" => "badge-rejected-gov",
+                        "budgetapproved" => "badge-budget-approved",
+                        "budgetrevisionrequired" => "badge-revision",
+                        "procurementbidding" => "badge-bidding",
+                        "procurementawarded" => "badge-awarded",
+                        "vouchergenerated" => "badge-voucher",
+                        "paymentcompleted" => "badge-completed",
+                        _ => "badge-draft"
+                    };
+
+                    <tr>
+                        <td class="font-bold" style="color: var(--slate-600);">#@project.ProjectId</td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--slate-900); font-size: 0.95rem;">@project.Title</div>
+                            <div style="font-size: 0.8rem; color: var(--slate-600); margin-top: 4px; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @project.Description
+                            </div>
+                        </td>
+                        <td class="font-bold">@project.Amount.ToString("C2", new System.Globalization.CultureInfo("en-PH"))</td>
+                        <td>@project.CreatedBy</td>
+                        <td>
+                            <span class="badge-pims @badgeClass">@project.Status</span>
+                        </td>
+                        <td>@project.DateCreated.ToString("MMM dd, yyyy")</td>
+                        <td style="text-align: right;">
+                            <a href="@Url.Action("Details", "Project", new { id = project.ProjectId })" class="btn-pims btn-pims-secondary" style="padding: 8px 16px;">
+                                Track Project
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
